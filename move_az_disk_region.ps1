@@ -50,6 +50,8 @@ Function Copy_AzDiskToDifferentRegion {
     
         # Create the target disk
         $targetDisk = New-AzDisk -ResourceGroupName $TargetResourceGroupName -DiskName $TargetDiskName -Disk $targetDiskconfig -ErrorAction Stop
+        # Copy security profile: 
+        Set-AzDiskSecurityProfile -Disk $targetDisk -DiskSecurityProfile $sourceDisk.SecurityProfile
     } catch {
         Write-Host "Error occurred while preparing the disks: $_"
         return
