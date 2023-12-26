@@ -19,6 +19,21 @@ Function Copy_AzDiskToDifferentRegion {
         [string]$SubscriptionId
     )
 
+    # Ensure Az-Module installation: 
+    try{
+        if (Get-Module -Name $ModuleName -ListAvailable | Where-Object { $_.Version -ge [Version]$MinimumVersion }) {
+            Write-Host "Module $ModuleName is already installed."
+        } else {
+            Write-Host "Installing module $ModuleName..."
+            Install-Module -Name $ModuleName -MinimumVersion $MinimumVersion -Force -AllowClobber -Scope CurrentUser
+            Import-Module -Name $ModuleName -Force
+            Write-Host "$ModuleName module installed successfully."
+        }
+    catch {
+        Write-Host  "PowerShell Az Module could not be installed: $_"
+        return
+    }
+
     try {
         # Ensures you do not inherit an AzContext in your runbook
         Disable-AzContextAutosave -Scope Process
@@ -48,6 +63,15 @@ Function Copy_AzDiskToDifferentRegion {
         # Create the target disk configuration
         $targetDiskconfig = New-AzDiskConfig -SkuName $sourceDisk.Sku.Name -osType $targetOS -UploadSizeInBytes $($sourceDisk.DiskSizeBytes+512)  -Location $TargetRegion -CreateOption 'Upload' -HyperVGeneration $targetVmGeneration -ErrorAction Stop
 
+        # Copy Security Profile Security Type. 
+        if ($sourceDisk.SecurityProfile -ne $null -and $sourceDisk.SecurityProfile.SecurityType -ne $null) {
+            # Set the security type from the source disk to the target disk
+            Set-AzDiskSecurityProfile -Disk $targetDiskconfig -SecurityType $sourceDisk.SecurityProfile.SecurityType
+        
+            Write-Host "Security profile set successfully."
+        } else {
+            Write-Host "Source disk does not have a defined SecurityProfile or SecurityType."
+        }
         # Create the target disk
         $targetDisk = New-AzDisk -ResourceGroupName $TargetResourceGroupName -DiskName $TargetDiskName -Disk $targetDiskconfig -ErrorAction Stop
 
@@ -85,7 +109,7 @@ Function Copy_AzDiskToDifferentRegion {
         Write-Host "Error occurred while revoking access to disks: $_"
         return
     }
-    
+
 }
 
 function Install-AzCopy {
@@ -135,10 +159,10 @@ function Install-AzCopy {
 }
 
 $sourceRG = "TW_Virtual-Machine"
-$sourceDiskName = "latest_tw_admin_vm-osdisk"
-$targetDiskName = "tw-vm2_osdisk-test-copy"
+$sourceDiskName = "tw-vm2_osdisk-test-copy"
+$targetDiskName = "tw-vm2_osdisk-test-copy2"
 $targetRG = "TW_Virtual-Machine"
-$targetLocate = "brazilsouth"
+$targetLocate = "eastus"
 $targetVmGeneration = "V2" # either V1 or V2
 #Expected value for OS is either "Windows" or "Linux"
 $targetOS = "Windows"
