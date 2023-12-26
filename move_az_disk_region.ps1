@@ -47,11 +47,10 @@ Function Copy_AzDiskToDifferentRegion {
     
         # Create the target disk configuration
         $targetDiskconfig = New-AzDiskConfig -SkuName $sourceDisk.Sku.Name -osType $targetOS -UploadSizeInBytes $($sourceDisk.DiskSizeBytes+512)  -Location $TargetRegion -CreateOption 'Upload' -HyperVGeneration $targetVmGeneration -ErrorAction Stop
-    
+
         # Create the target disk
         $targetDisk = New-AzDisk -ResourceGroupName $TargetResourceGroupName -DiskName $TargetDiskName -Disk $targetDiskconfig -ErrorAction Stop
-        # Copy security profile: 
-        Set-AzDiskSecurityProfile -Disk $targetDisk -DiskSecurityProfile $sourceDisk.SecurityProfile
+
     } catch {
         Write-Host "Error occurred while preparing the disks: $_"
         return
@@ -89,7 +88,7 @@ Function Copy_AzDiskToDifferentRegion {
     
 }
 
-function install_azcopy {
+function Install-AzCopy {
     param (
         [string]$InstallPath = 'C:\AzCopy'
     )
@@ -137,7 +136,7 @@ function install_azcopy {
 
 $sourceRG = "TW_Virtual-Machine"
 $sourceDiskName = "latest_tw_admin_vm-osdisk"
-$targetDiskName = "tw-vm2_osdisk"
+$targetDiskName = "tw-vm2_osdisk-test-copy"
 $targetRG = "TW_Virtual-Machine"
 $targetLocate = "brazilsouth"
 $targetVmGeneration = "V2" # either V1 or V2
