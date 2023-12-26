@@ -20,17 +20,28 @@ Function Copy_AzDiskToDifferentRegion {
     )
 
     # Ensure Az-Module installation: 
-    try{
-        if (Get-Module -Name $ModuleName -ListAvailable | Where-Object { $_.Version -ge [Version]$MinimumVersion }) {
-            Write-Host "Module $ModuleName is already installed."
-        } else {
-            Write-Host "Installing module $ModuleName..."
-            Install-Module -Name $ModuleName -MinimumVersion $MinimumVersion -Force -AllowClobber -Scope CurrentUser
-            Import-Module -Name $ModuleName -Force
-            Write-Host "$ModuleName module installed successfully."
+    try {
+        $requiredModules = @{
+            "Az.Accounts" = "2.13.2"
+            "Az.Compute" = "7.1.0"
         }
+        
+        foreach ($module in $requiredModules.GetEnumerator()) {
+            $moduleName = $module.Key
+            $minimumVersion = $module.Value
+
+            if (Get-Module -Name $moduleName -ListAvailable | Where-Object { $_.Version -ge [version]$minimumVersion }) {
+                Write-Host "Module $moduleName is already installed."
+            } else {
+                Write-Host "Installing module $moduleName..."
+                Install-Module -Name $moduleName -MinimumVersion $minimumVersion -Force -AllowClobber -Scope CurrentUser
+                Import-Module -Name $moduleName -Force
+                Write-Host "$moduleName module installed successfully."
+            }
+        }
+    }
     catch {
-        Write-Host  "PowerShell Az Module could not be installed: $_"
+        Write-Host "PowerShell Az Module could not be installed: $_"
         return
     }
 
@@ -63,17 +74,19 @@ Function Copy_AzDiskToDifferentRegion {
         # Create the target disk configuration
         $targetDiskconfig = New-AzDiskConfig -SkuName $sourceDisk.Sku.Name -osType $targetOS -UploadSizeInBytes $($sourceDisk.DiskSizeBytes+512)  -Location $TargetRegion -CreateOption 'Upload' -HyperVGeneration $targetVmGeneration -ErrorAction Stop
 
+
+        # Create the target disk
+        $targetDisk = New-AzDisk -ResourceGroupName $TargetResourceGroupName -DiskName $TargetDiskName -Disk $targetDiskconfig -ErrorAction Stop
+
         # Copy Security Profile Security Type. 
         if ($sourceDisk.SecurityProfile -ne $null -and $sourceDisk.SecurityProfile.SecurityType -ne $null) {
             # Set the security type from the source disk to the target disk
-            Set-AzDiskSecurityProfile -Disk $targetDiskconfig -SecurityType $sourceDisk.SecurityProfile.SecurityType
+            Set-AzDiskSecurityProfile -Disk $targetDisk -SecurityType $sourceDisk.SecurityProfile.SecurityType
         
             Write-Host "Security profile set successfully."
         } else {
             Write-Host "Source disk does not have a defined SecurityProfile or SecurityType."
         }
-        # Create the target disk
-        $targetDisk = New-AzDisk -ResourceGroupName $TargetResourceGroupName -DiskName $TargetDiskName -Disk $targetDiskconfig -ErrorAction Stop
 
     } catch {
         Write-Host "Error occurred while preparing the disks: $_"
@@ -159,8 +172,8 @@ function Install-AzCopy {
 }
 
 $sourceRG = "TW_Virtual-Machine"
-$sourceDiskName = "tw-vm2_osdisk-test-copy"
-$targetDiskName = "tw-vm2_osdisk-test-copy2"
+$sourceDiskName = "latest_tw_admin_vm-osdisk"
+$targetDiskName = "tw-vm2_osdisk-test-copy"
 $targetRG = "TW_Virtual-Machine"
 $targetLocate = "eastus"
 $targetVmGeneration = "V2" # either V1 or V2
