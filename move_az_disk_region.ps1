@@ -171,16 +171,16 @@ function Install-AzCopy {
     }
 }
 
-$sourceRG = "TW_Virtual-Machine"
-$sourceDiskName = "latest_tw_admin_vm-osdisk"
-$targetDiskName = "tw-vm2_osdisk-test-copy"
-$targetRG = "TW_Virtual-Machine"
-$targetLocate = "eastus"
-$targetVmGeneration = "V2" # either V1 or V2
+$sourceRG = ""
+$sourceDiskName = ""
+$targetDiskName = ""
+$targetRG = ""
+$targetLocate = ""
+$targetVmGeneration = "" # either V1 or V2
 #Expected value for OS is either "Windows" or "Linux"
-$targetOS = "Windows"
-$SubscriptionId = "f64ded84-0267-4150-b30c-a1f7ed8abe5f"
-$TenantId = "88940f07-5551-49e6-8453-c578e8759aaf"
+$targetOS = ""
+$SubscriptionId = ""
+$TenantId = ""
 
 # Function call with your variables
 Copy_AzDiskToDifferentRegion `
